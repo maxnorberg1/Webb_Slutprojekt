@@ -12,6 +12,7 @@ var passport = require('passport');
 var flash = require('connect-flash');
 var validator = require('express-validator');
 var MongoStore = require('connect-mongo')(session);
+
 // This is your real test secret API key.
 const stripe = require("stripe")("sk_test_51IjaarKYqd7ERY9f4JdFCN0x22mzaZb78w5NfZVOoqUN60fpQw2iTrcT3vmBmpvQrFOVYNy41rGBeIiv7NTyrqju00XTBgry9o");
 
@@ -23,24 +24,6 @@ var app = express();
 mongoose.connect('mongodb://localhost/shopping', { useNewUrlParser: true, useUnifiedTopology: true });
 require('./config/passport');
 
-// Create a PaymentIntent with the order amount and currency
-const calculateOrderAmount = items => {
-  // Replace this constant with a calculation of the order's amount
-  // Calculate the order total on the server to prevent
-  // people from directly manipulating the amount on the client
-  return 1400;
-};
-app.post("/create-payment-intent", async (req, res) => {
-  const { items } = req.body;
-  // Create a PaymentIntent with the order amount and currency
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount: calculateOrderAmount(items),
-    currency: "sek"
-  });
-  res.send({
-    clientSecret: paymentIntent.client_secret
-  });
-});
 
 // view engine setup
 app.engine('.hbs', expressHbs({defaultLayout: 'layout', extname: '.hbs', handlebars: allowInsecurePrototypeAccess(Handlebars)}));
@@ -67,6 +50,26 @@ app.use(function(req, res, next) {
   res.locals.login = req.isAuthenticated();
   res.locals.session = req.session;
   next();
+});
+
+const calculateOrderAmount = items => {
+  // Replace this constant with a calculation of the order's amount
+  // Calculate the order total on the server to prevent
+  // people from directly manipulating the amount on the client
+  return 1400;
+};
+
+app.post("/create-payment-intent", async (req, res) => {
+  const { items } = req.body;
+  // Create a PaymentIntent with the order amount and currency
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: calculateOrderAmount(items),
+    currency: "sek"
+  });
+
+  res.send({
+    clientSecret: paymentIntent.client_secret
+  });
 });
 
 app.use('/user', userRouter);
